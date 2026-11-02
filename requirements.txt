@@ -1,0 +1,10 @@
+faster-whisper>=1.0
+speechbrain>=1.0
+torch
+torchaudio
+soundcard>=0.4.3
+soxr
+soundfile
+webrtcvad-wheels
+numpy
+PyQt6
