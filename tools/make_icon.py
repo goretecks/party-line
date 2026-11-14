@@ -2,13 +2,13 @@
 import os
 import sys
 
-from PyQt6.QtCore import QRectF, Qt
-from PyQt6.QtGui import QColor, QFont, QFontDatabase, QImage, QPainter, QPainterPath, QPen
+from PyQt6.QtCore import QPointF, QRectF, Qt
+from PyQt6.QtGui import QColor, QFont, QFontDatabase, QImage, QPainter, QPainterPath, QPolygonF
 from PyQt6.QtWidgets import QApplication
 
 A = os.path.join(os.path.dirname(__file__), "..", "voip_translator", "assets")
 app = QApplication(sys.argv)
-QFontDatabase.addApplicationFont(os.path.join(A, "fonts", "Yellowtail-Regular.ttf"))
+QFontDatabase.addApplicationFont(os.path.join(A, "fonts", "ChakraPetch-BoldItalic.ttf"))
 S = 256
 img = QImage(S, S, QImage.Format.Format_ARGB32)
 img.fill(Qt.GlobalColor.transparent)
@@ -16,28 +16,27 @@ p = QPainter(img)
 p.setRenderHint(QPainter.RenderHint.Antialiasing)
 r = QRectF(8, 8, S - 16, S - 16)
 p.setPen(Qt.PenStyle.NoPen)
-p.setBrush(QColor("#121C26"))
-p.drawRoundedRect(r, 52, 52)
+p.setBrush(QColor("#0C0D10"))
+p.drawRoundedRect(r, 40, 40)
 clip = QPainterPath()
-clip.addRoundedRect(r, 52, 52)
+clip.addRoundedRect(r, 40, 40)
 p.setClipPath(clip)
-sq = 20
-for row in range(2):  # checker strip
-    for i in range(S // sq + 1):
-        p.fillRect(i * sq, S - 8 - 2 * sq + row * sq, sq, sq,
-                   QColor("#F3E6C8" if (i + row) % 2 else "#0B1117"))
+# diagonal livery stripes across the lower right
+for off, width, col in ((0, 26, "#E10600"), (32, 8, "#F2F2F0"), (46, 26, "#1446C8")):
+    y = 150 + off
+    p.setBrush(QColor(col))
+    p.drawPolygon(QPolygonF([QPointF(0, y + 60), QPointF(S, y - 40),
+                             QPointF(S, y - 40 + width), QPointF(0, y + 60 + width)]))
 p.setClipping(False)
-for w, a in ((22, 40), (14, 70), (8, 120)):  # neon ring glow
-    c = QColor("#FF5C6C"); c.setAlpha(a)
-    p.setPen(QPen(c, w)); p.setBrush(Qt.BrushStyle.NoBrush)
-    p.drawRoundedRect(r.adjusted(14, 14, -14, -14), 40, 40)
-p.setPen(QPen(QColor("#FFD9DC"), 4))
-p.drawRoundedRect(r.adjusted(14, 14, -14, -14), 40, 40)
-f = QFont("Yellowtail", 78)
+f = QFont("Chakra Petch")
+f.setPixelSize(118)
+f.setBold(True)
+f.setItalic(True)
 p.setFont(f)
-for off, col in ((5, QColor(255, 92, 108, 110)), (0, QColor("#FFF1E8"))):
-    p.setPen(col)
-    p.drawText(QRectF(off - 6, off - 6, S, S - 40), Qt.AlignmentFlag.AlignCenter, "PL")
+box = QRectF(0, 14, S, 150)
+for d, col in ((9, "#1446C8"), (5, "#E10600"), (0, "#FFFFFF")):
+    p.setPen(QColor(col))
+    p.drawText(box.translated(d, d * 0.6), Qt.AlignmentFlag.AlignCenter, "PL")
 p.end()
 img.save(os.path.join(A, "icon.png"))
 from PIL import Image

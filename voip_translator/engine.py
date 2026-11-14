@@ -32,7 +32,7 @@ def friendly_error(e: Exception) -> str:
 
 
 class Engine(QObject):
-    line = pyqtSignal(dict)            # {idx, name, lang, text, time}
+    line = pyqtSignal(dict)            # {idx, name, lang, text, time, dt}
     status = pyqtSignal(str, str)      # kind: idle|busy|live|error, message
     level = pyqtSignal(float)          # 0..1 audio level for the VU meter
     running = pyqtSignal(bool)
@@ -181,9 +181,10 @@ class Engine(QObject):
             if not text or stop.is_set():
                 continue
             spk, is_new = self.tracker.identify(utt)
+            dt = time.perf_counter() - t0
             log.info("%s [%s] %s (%.1fs audio, %.2fs)", spk.name, lang, text,
-                     len(utt) / SAMPLE_RATE, time.perf_counter() - t0)
+                     len(utt) / SAMPLE_RATE, dt)
             self.line.emit({"idx": spk.idx, "name": spk.name, "lang": lang, "text": text,
-                            "time": time.time()})
+                            "time": time.time(), "dt": dt})
             if is_new:
                 self.speakers_changed.emit()

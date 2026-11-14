@@ -17,7 +17,7 @@ Translates teammates' voice chat (Spanish by default) into English as they speak
 
 | Control | What it does |
 |---|---|
-| **START / STOP** | Turns listening on and off. The **ON AIR** sign lights up while it's listening. |
+| **START / STOP** | Turns listening on and off. The **LIVE** lamp lights up while it's listening. |
 | **Model** | Tiny → Large. Bigger = better translation but more CPU. **Small** is the sweet spot. Switching reloads automatically. |
 | **Translate** | Which language to pick out. Anything else (English teammates, noise) is ignored. |
 | **Listen to** | Which audio output to listen to. Leave on *System default* unless you route voice chat elsewhere. |
@@ -25,8 +25,9 @@ Translates teammates' voice chat (Spanish by default) into English as they speak
 | **NEW MATCH** | Clears the transcript and forgets the voices. |
 | **SETTINGS** | CPU threads, voice-matching strictness, text size, log folder. |
 
-The VU meter shows the audio level it's hearing. If the needle never moves while people talk,
-pick a different **Listen to** device.
+The **tach** shows the audio level it's hearing: it idles while listening and revs when someone
+talks. If the needle never moves during voice chat, pick a different **Listen to** device.
+The amber **LAG** readout is how many seconds the last line took to translate.
 
 ## Performance
 
@@ -60,8 +61,8 @@ voip_translator/
   speakers.py     voiceprints (GE2E encoder as ONNX) + online clustering
   transcriber.py  faster-whisper translate + Silero VAD + language gate
   engine.py       background pipeline → Qt signals
-  app.py          the window (diner-after-dark theme)
-  assets/         fonts (OFL/Apache), icon, speaker model
+  app.py          the window (late-80s JDM cockpit theme, all artwork drawn in code)
+  assets/         fonts (SIL OFL), icon, speaker model
 tools/            export_speaker_model.py, make_icon.py, launch.py
 PartyLine.spec    PyInstaller build (windowed, one file)
 ```
@@ -70,5 +71,5 @@ Run from source: `pip install -r requirements.txt` then `python -m voip_translat
 Build the exe on Windows: `build.bat` → `dist\PartyLine.exe`.
 
 Credits: speech by [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT), voiceprints
-from [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) (Apache-2.0), fonts Yellowtail
-(Apache-2.0), Oswald and Courier Prime (SIL OFL).
+from [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) (Apache-2.0), fonts Chakra Petch,
+Dela Gothic One and DSEG7 (SIL OFL).

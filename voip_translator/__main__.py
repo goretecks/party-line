@@ -144,11 +144,12 @@ def _demo(win):
     for i, (idx, name, text) in enumerate(lines):
         speakers[idx] = SimpleNamespace(idx=idx, name=name)
         win.on_line({"idx": idx, "name": name, "lang": "es", "text": text,
-                     "time": now - (len(lines) - i) * 40})
+                     "time": now - (len(lines) - i) * 40, "dt": 1.2 + 0.1 * i})
     win.engine.speakers = lambda: list(speakers.values())
     win.refresh_chips()
     win.on_running(True)
-    win.vu.value = 0.62
+    win.tach.set_live(False)  # freeze the needle for the screenshot
+    win.tach.value = win.tach.target = 0.58
     win.on_status("live", "On the air — listening to Headphones (Realtek USB Audio)")
 
 
