@@ -74,13 +74,16 @@ def _selftest() -> int:
     log = logging.getLogger("selftest")
     ok = True
 
-    def check(name, fn):
+    def check(name, fn, required=True):
         nonlocal ok
         try:
             log.info("PASS %s: %s", name, fn())
         except Exception:  # noqa: BLE001
-            ok = False
-            log.exception("FAIL %s", name)
+            if required:
+                ok = False
+                log.exception("FAIL %s", name)
+            else:  # e.g. a build server with no sound card
+                log.warning("WARN %s", name, exc_info=True)
 
     t = np.arange(48000) / 16000
     voice = (0.2 * np.sin(2 * np.pi * 160 * t) * (1 + np.sin(2 * np.pi * 4 * t))).astype(np.float32)
@@ -125,7 +128,7 @@ def _selftest() -> int:
     check("speaker model", speakers)
     check("voice detection", vad)
     check("whisper runtime", whisper)
-    check("audio devices", devices)
+    check("audio devices", devices, required=False)
     log.info("SELFTEST %s", "OK" if ok else "FAILED")
     return 0 if ok else 1
 
