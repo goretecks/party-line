@@ -1,122 +1,74 @@
-# VOIP Overlay
+# Party Line: live voice-chat translator
 
-Live translated captions of your teammates' voice chat, drawn as a click-through strip at the top of the screen.
-Each voice is told apart automatically and given its own colour and name.
+Translates teammates' voice chat (Spanish by default) into English as they speak, and labels
+**who** said each line. One window, built for a second monitor while you play fullscreen.
 
-![overlay](docs/overlay.png)
+![screenshot](docs/screenshot.png)
 
-## How it works
+## Using it
 
-```
-game / Discord audio ──► loopback capture ──► VAD (split into utterances)
-                                                   │
-                       ┌───────────────────────────┴────────────┐
-                       ▼                                        ▼
-         Whisper "translate" (any lang → English)   ECAPA voice embedding → match to known voices
-                       └───────────────────────────┬────────────┘
-                                                   ▼
-                                   "Speaker 2 [ru]: two on B, one low"
-```
+1. Double-click **`PartyLine.exe`** (no install). The first launch takes ~10 s to unpack.
+   Windows SmartScreen may say "Windows protected your PC" because the app isn't code-signed:
+   click **More info → Run anyway**.
+2. Drag the window to your second monitor.
+3. Click **START LISTENING**. The first time you use a model it downloads it
+   (Small ≈ 480 MB); after that it starts in seconds.
+4. Play. Spanish lines appear translated, with a coloured tag per voice.
 
-| File | Role |
+| Control | What it does |
 |---|---|
-| `voip_overlay/audio.py` | Captures what's playing on an output device (WASAPI loopback) and splits it into utterances with WebRTC VAD |
-| `voip_overlay/speakers.py` | Online speaker clustering: assigns each utterance to a known voice or creates a new speaker |
-| `voip_overlay/transcriber.py` | faster-whisper speech-to-text + translation, with a filter for Whisper's usual noise hallucinations |
-| `voip_overlay/ui.py` | Transparent, always-on-top, click-through PyQt6 caption window |
-| `voip_overlay/__main__.py` | CLI and threading (capture → segment → recognise → display) |
+| **START / STOP** | Turns listening on and off. The **ON AIR** sign lights up while it's listening. |
+| **Model** | Tiny → Large. Bigger = better translation but more CPU. **Small** is the sweet spot. Switching reloads automatically. |
+| **Translate** | Which language to pick out. Anything else (English teammates, noise) is ignored. |
+| **Listen to** | Which audio output to listen to. Leave on *System default* unless you route voice chat elsewhere. |
+| **Name tags** | Click a caller's tag to rename them. |
+| **NEW MATCH** | Clears the transcript and forgets the voices. |
+| **SETTINGS** | CPU threads, voice-matching strictness, text size, log folder. |
 
-## Quick start (Windows, no coding needed)
+The VU meter shows the audio level it's hearing. If the needle never moves while people talk,
+pick a different **Listen to** device.
 
-1. On GitHub, click the green **Code** button → **Download ZIP**. Right-click the ZIP → **Extract All**
-   (e.g. to `C:\voip-overlay`).
-2. Double-click **`setup.bat`**. It installs Python if needed (if it does, run `setup.bat` a second time), then the
-   libraries and speech models. Takes ~5–10 minutes once. If Windows SmartScreen warns you, click
-   **More info → Run anyway**.
-3. Double-click **`run.bat`** before or during a match. A transcript window opens on monitor 2 and shows only Spanish
-   speech, translated to English. Close the black console window to stop.
-   - **`run-overlay.bat`** shows a caption strip on top of the game instead (borderless/windowed mode only).
+## Performance
 
-### Performance
+Runs entirely on the **CPU** (4 threads by default) and never touches the graphics card. It only
+works while someone is talking. If you see stutter in-game, lower CPU threads in Settings or pick
+the Base model.
 
-Everything runs on the **CPU**, limited to 4 threads, and **never touches your graphics card**. (The speech engine
-only supports NVIDIA GPUs anyway.) The CPU only works while someone is talking, in short bursts. If you still see
-stutters, edit `run.bat` and add `--cpu-threads 2` (slower captions) or `--model base` (faster, less accurate).
+## Better accuracy: give it only voices (optional)
 
-### Hearing only voices (optional, big accuracy boost)
+By default it hears all game audio and filters out gunfire and music. It works better if voice
+chat goes to its own device: install [VB-Audio Virtual Cable](https://vb-audio.com/Cable/), then
 
-By default the app listens to *all* game audio and filters out the noise. It works better if voice chat goes to its
-own device. Install [VB-Audio Virtual Cable](https://vb-audio.com/Cable/) (free), restart, then:
+- **Battlefield 6:** Options → Sound → Voice Chat → output device → `CABLE Input`.
+- **Apex Legends:** Control Panel → Sound → Playback → right-click `CABLE Input` →
+  **Set as Default Communication Device** (keep your headset as *Default Device*).
+- To still hear teammates: Sound → Recording → `CABLE Output` → Properties → Listen →
+  *Listen to this device* → your headset.
+- In Party Line set **Listen to** → `CABLE Input`.
 
-- **Battlefield 6:** Options → Sound → Voice Chat → set the voice chat **output device** to `CABLE Input`.
-- **Apex Legends:** there's no in-game output setting, but Apex sends voice to the Windows **default communications
-  device**. Open *Control Panel → Sound → Playback*, right-click `CABLE Input` → **Set as Default Communication
-  Device**. Keep your headset as **Default Device**.
-- **So you still hear your teammates:** *Sound → Recording* → `CABLE Output` → Properties → **Listen** tab → tick
-  *Listen to this device* → playback through your headset.
-- Then add `--audio-device "CABLE"` to the end of the line in `run.bat`.
+## Troubleshooting
 
-## Run
+- Settings → **Open log folder** → `translator.log` has the details of any error.
+- `PartyLine.exe --selftest` checks every part (writes PASS/FAIL to the log).
+- Settings live in `%APPDATA%\VOIP Translator\settings.json`. Delete it to reset.
 
-Typical use — Spanish-speaking randoms, game in exclusive fullscreen, transcript on monitor 2:
+## For developers
 
-```bash
-python -m voip_overlay --only-lang es --panel --screen 2
+```
+voip_translator/
+  audio.py        WASAPI loopback capture + WebRTC VAD utterance splitting
+  speakers.py     voiceprints (GE2E encoder as ONNX) + online clustering
+  transcriber.py  faster-whisper translate + Silero VAD + language gate
+  engine.py       background pipeline → Qt signals
+  app.py          the window (diner-after-dark theme)
+  assets/         fonts (OFL/Apache), icon, speaker model
+tools/            export_speaker_model.py, make_icon.py, launch.py
+PartyLine.spec    PyInstaller build (windowed, one file)
 ```
 
-![panel](docs/panel.png)
+Run from source: `pip install -r requirements.txt` then `python -m voip_translator`.
+Build the exe on Windows: `build.bat` → `dist\PartyLine.exe`.
 
-Or as a click-through strip over a borderless-windowed game:
-
-```bash
-python -m voip_overlay --only-lang es
-```
-
-The monitor numbers are printed at startup.
-
-Useful options:
-
-```bash
-python -m voip_overlay --list-devices                     # show output devices
-python -m voip_overlay --audio-device "CABLE Input"       # listen to one specific device
-python -m voip_overlay --names "Alex,Mira,Jonas"          # name speakers in order they first talk
-python -m voip_overlay --model base --cpu-threads 2       # lightest on the CPU
-python -m voip_overlay --model medium --compute-device cuda   # NVIDIA GPUs only
-python -m voip_overlay --task transcribe                  # captions in original language, no translation
-python -m voip_overlay --file clip.wav --headless         # test on a recording, console only
-```
-
-Ctrl+C in the console window quits.
-
-## How it decides what to translate
-
-1. **WebRTC VAD** cuts the audio into utterances (cheap, runs continuously).
-2. **Silero VAD** (bundled with faster-whisper) strips non-speech such as gunfire, music and footsteps from each utterance.
-3. **Language gate** (`--only-lang es`): Whisper detects the language first. If it isn't Spanish with at least
-   `--lang-prob` confidence, the clip is dropped *before* the expensive translation step. English teammates and
-   leftover noise never reach the screen.
-
-## Tips for good results
-
-- **Isolate the voice chat if you can.** Loopback of the default device also hears gunshots, music and footsteps.
-  If voice runs through Discord (or a game that lets you choose a voice output device), send it to a separate
-  device such as [VB-Audio Virtual Cable](https://vb-audio.com/Cable/) and use `--audio-device "CABLE"`.
-  (Turn on "Listen to this device" for the cable in Windows sound settings so you still hear it.)
-- **Exclusive fullscreen?** Use `--panel --screen 2` to put the transcript on another monitor. The overlay strip only
-  shows over borderless/windowed games.
-- **Very short callouts** ("sí", "vale", "dale") give Whisper little to go on for language detection. If too many get
-  dropped, lower `--lang-prob` to e.g. `0.35`.
-- **Speaker separation:** if two people get merged into one speaker, raise `--threshold` (e.g. `0.55`). If one person
-  keeps getting split into several, lower it (e.g. `0.35`). Voice chat audio is compressed, so expect occasional mix-ups
-  when people talk over each other.
-- **Model choice:** `small` (default) is a good balance on CPU. `medium` translates slang better but is ~3x slower.
-  Don't use `large-v3-turbo`: it was trained without the translate task.
-
-## Limitations / next steps
-
-- Whisper translates only **into English**. For other target languages, add a text-translation step (e.g. NLLB or
-  Argos Translate) after `--task transcribe`.
-- Speakers are anonymous voiceprints that reset each run. Saving voiceprints and mapping them to gamertags would
-  give stable names across sessions.
-- On Discord, a bot can receive each user's audio as a **separate stream**, which gives perfect speaker
-  attribution without voice clustering. That would be a worthwhile alternative audio source.
+Credits: speech by [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT), voiceprints
+from [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) (Apache-2.0), fonts Yellowtail
+(Apache-2.0), Oswald and Courier Prime (SIL OFL).

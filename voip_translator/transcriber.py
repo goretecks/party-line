@@ -22,8 +22,6 @@ class Transcriber:
         from faster_whisper import WhisperModel
         self.model = WhisperModel(model, device=device, compute_type=compute_type,
                                   cpu_threads=cpu_threads)
-        print(f"[stt] whisper '{model}' on {self.model.model.device} "
-              f"({cpu_threads} CPU threads)")
         self.task = task
         self.language = language
         self.only_langs = set(only_langs or [])
